@@ -189,14 +189,12 @@ _tmp_dir="/tmp/${_script_name}.$RANDOM.$RANDOM.$RANDOM.$$"
 # Logfile location
 _logFile="${_tmp_dir}/log/${_script_name}.log"
 
-
 # Function to Set trap to delete temp directory on exit
 function _cleanup {
     if [[ -d "${_tmp_dir}" ]] && [[ "${log}" -eq 0 ]]; then
         rm -rf "${_tmp_dir}"
     fi
 }
-
 
 # Display usage and arguments
 function usage {
@@ -272,6 +270,7 @@ req_check "${required_apps[@]}" # Do not remove unless you know what you're doin
 #                                           BEGIN HERE
 #---------------------------------------------------------------------------------------------------
 function main {
+    # Your code goes here
     usage
 }
 #---------------------------------------------------------------------------------------------------
