@@ -19,18 +19,17 @@
 #                                          USER OPTIONS
 #---------------------------------------------------------------------------------------------------
 
-# Required programs  (space separated list)
-required_apps=("git")                    # Apps required to run this script.
+required_apps=("git")                    # Apps required to run this script. ("app1" "app2")
 prod=0                                   # Production help settings (show different/limited options)
+
 #---------------------------------------------------------------------------------------------------
-#                                           END OPTIONS
+#                                           SCRIPT SETTINGS
 #---------------------------------------------------------------------------------------------------
 
-# Set variables
+# Locations
 _script_name=$(basename "$0")
 _script_dir=$(dirname "$0")
 _script_path=$(realpath "$0")
-_utils_location="$_script_dir/utils"
 
 # Set flags
 debug=0
@@ -43,11 +42,9 @@ root_only=0
 set -o pipefail
 set -o errexit
 
-
-# shellcheck disable=SC1090
-for file in "$_utils_location"/*.bash; do
-    source "$file"
-done
+#---------------------------------------------------------------------------------------------------
+#                                           FUNCTIONS
+#---------------------------------------------------------------------------------------------------
 
 _alert() {
     local _color
@@ -153,6 +150,54 @@ function header() {
     _alert header "${1}"
 }
 
+function _update() {
+    if [[ -d .git ]]; then
+        git fetch
+        if [[ $(git rev-parse HEAD) != $(git rev-parse "@{u}") ]]; then
+            git pull
+            _alert success "Updated to latest version, please re-run script"
+            exit 0
+        fi
+    fi
+}
+
+function req_check {
+    local _program
+    local _missing_programs=()
+    for _program in "$@"; do
+        if ! command -v "${_program}" &>/dev/null; then
+            _missing_programs+=("${_program}")
+        fi
+    done
+
+    if [[ ${#_missing_programs[@]} -gt 0 ]]; then
+        fatal "Missing required programs: ${_missing_programs[*]}"
+    fi
+}
+
+function _check_root {
+    if [[ $EUID -ne 0 ]]; then
+        fatal "This script must be run as root"
+    fi
+}
+
+_tmp_dir="/tmp/${_script_name}.$RANDOM.$RANDOM.$RANDOM.$$"
+(umask 077 && mkdir "${_tmp_dir}") || {
+    die "Could not create temporary directory! Exiting."
+}
+
+# Logfile location
+_logFile="${_tmp_dir}/log/${_script_name}.log"
+
+
+# Function to Set trap to delete temp directory on exit
+function _cleanup {
+    if [[ -d "${_tmp_dir}" ]] && [[ "${log}" -eq 0 ]]; then
+        rm -rf "${_tmp_dir}"
+    fi
+}
+
+
 # Display usage and arguments
 function usage {
     if [[ $prod -eq 0 ]]; then
@@ -221,15 +266,17 @@ if [[ $root_only -eq 1 ]]; then
     _check_root
 fi
 
-#===========================================================================
-#                            MAIN - START
-#===========================================================================
+req_check "${required_apps[@]}" # Do not remove unless you know what you're doing
+
+#---------------------------------------------------------------------------------------------------
+#                                           START MAIN
+#---------------------------------------------------------------------------------------------------
 function main {
-    req_check "${required_apps[@]}" # Do not remove unless you know what you're doing
+    usage
 }
-#===========================================================================
-#                            MAIN - END
-#===========================================================================
+#---------------------------------------------------------------------------------------------------
+#                                           END MAIN
+#---------------------------------------------------------------------------------------------------
 
 main
 
