@@ -6,7 +6,8 @@ function _update() {
         git fetch
         if [[ $(git rev-parse HEAD) != $(git rev-parse "@{u}") ]]; then
             git pull
-            _alert success "Updated to latest version"
+            _alert success "Updated to latest version, please re-run script"
+            exit 0
         fi
     fi
 }

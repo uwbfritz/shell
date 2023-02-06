@@ -15,6 +15,17 @@
 #
 #===================================================================================================
 
+#---------------------------------------------------------------------------------------------------
+#                                          USER OPTIONS
+#---------------------------------------------------------------------------------------------------
+
+# Required programs  (space separated list)
+required_apps=("git")
+
+#---------------------------------------------------------------------------------------------------
+#                                           END OPTIONS
+#---------------------------------------------------------------------------------------------------
+
 # Set variables
 _script_name=$(basename "$0")
 _script_dir=$(dirname "$0")
@@ -24,6 +35,14 @@ _utils_location="$_script_dir/utils"
 # Set flags
 debug=0
 log=0
+strict=0
+update=0
+root_only=0
+
+# Set options
+set -o pipefail
+set -o errexit
+
 
 # shellcheck disable=SC1090
 for file in "$_utils_location"/*.bash; do
@@ -134,6 +153,19 @@ function header() {
     _alert header "${1}"
 }
 
+# Display usage and arguments
+function usage {
+    echo "Usage: ${_script_name} [options]"
+    echo "Options:"
+    echo "  -d, --debug     Enable debug mode"
+    echo "  -l, --log       Enable logging"
+    echo "  -s, --strict    Enable strict mode"
+    echo "  -u, --update    Update script"
+    echo "  -r, --root      Require root"
+    echo "  -h, --help      Display this help message"
+}
+
+
 # shellcheck disable=SC2034
 while [[ $# -gt 0 ]]; do
     key="$1"
@@ -143,6 +175,15 @@ while [[ $# -gt 0 ]]; do
             ;;
         -l|--log)
             log=1
+            ;;
+        -s|--strict)
+            strict=1
+            ;;
+        -u|--update)
+            update=1
+            ;;
+        -r|--root)
+            root_only=1
             ;;
         -h|--help)
             usage
@@ -160,22 +201,30 @@ if [[ $debug -eq 1 ]]; then
     set -x
 fi
 
-# Display usage and arguments
-function usage {
-    echo "Usage: ${_script_name} [options]"
-    echo "Options:"
-    echo "  -d, --debug     Enable debug mode"
-    echo "  -l, --log       Enable logging"
-    echo "  -h, --help      Display this help message"
-}
+# Set strict mode
+if [[ $strict -eq 1 ]]; then
+    set -o nounset
+fi
 
-# Main 
-function main {
-    # check_root
-    req_check "git" # Format "one" "two" "three"
+# Run _update function if update=1
+if [[ $update -eq 1 ]]; then
     _update
+fi
 
+# Check for root if flagged
+if [[ $root_only -eq 1 ]]; then
+    _check_root
+fi
+
+#===========================================================================
+#                            MAIN - START
+#===========================================================================
+function main {
+    req_check "${required_apps[@]}" # Do not remove unless you know what you're doing
 }
+#===========================================================================
+#                            MAIN - END
+#===========================================================================
 
 main
 
