@@ -157,6 +157,8 @@ function _update() {
             git pull
             _alert success "Updated to latest version, please re-run script"
             exit 0
+        else
+            _alert success "Script up to date"
         fi
     fi
 }
